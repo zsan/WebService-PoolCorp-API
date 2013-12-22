@@ -7,9 +7,10 @@ use LWP::UserAgent;
 use JSON::XS;
 use Data::OpenStruct::Deep;
 use Data::URIEncode qw/complex_to_query/;
+
 =head1 NAME
 
-WebService::PoolCorp::API - Perl !nterface to the poolcorop.com's webservice
+WebService::PoolCorp::API - Perl interface to the poolcorop.com's webservice
 
 =head1 VERSION
 
@@ -22,10 +23,6 @@ our $VERSION = '0.01';
 
 =head1 SYNOPSIS
 
-Quick summary of what the module does.
-
-Perhaps a little code snippet.
-
     use WebService::PoolCorp::API;
 
     my $poolcorp = WebService::PoolCorp::API->new(
@@ -34,7 +31,7 @@ Perhaps a little code snippet.
     );
 
     $poolcorp->auth or die $poolcorp->error_str;
-    ...
+
 
 =head1 ATTRIBUTES
 
@@ -75,15 +72,16 @@ has service_path => (
   default => 'https://pool360.poolcorp.com/Services/MobileService.svc/Process?'
 );
 
-has ua          => (
-  isa => 'Object',
-  is => 'rw',
+has ua => (
+  isa     => 'Object',
+  is      => 'rw',
   default => sub { LWP::UserAgent->new },
   handles => { get => 'get' },
 );
 
 around 'get' => sub {
-  my ($original_method, $self) = @_;
+  my $original_method = shift;
+  my $self = shift;
 
   my $res = $self->$original_method(@_);
   
@@ -115,7 +113,8 @@ sub _build_auth {
     pass    => $self->password
   };
 
-  my $res     = $self->get($self->service_path . complex_to_query($query));
+  my $res = $self->get($self->service_path . complex_to_query($query));
+  
   return undef if $self->error_str;
 
   my $decoded = decode_json $res->content;
@@ -171,6 +170,7 @@ sub getproduct {
   my $query = { pid => $pid, process => 'getproduct', tk => $self->token };
   
   my $res = $self->get($self->service_path . complex_to_query($query));
+  
   return undef if $self->error_str;
 
   my $decoded = decode_json $res->content;
@@ -180,7 +180,7 @@ sub getproduct {
 
 =head2 getproductavailability
 
-Just like the name, it will check for product availability and you need to pass
+Just like the name, it will check for product's availability and you need to pass
 product ID to this method.
 
 Will return array reference of L<< Data::OpenStruct::Deep >>'s object
@@ -213,6 +213,19 @@ sub getproductavailability{
 }
 
 =head2 doesproducthaverelationships
+
+Will check if product has a relationships, you need to pass product's ID to the
+method. 
+
+Will return L<< Data::OpenStruct::Deep >>'s object
+
+  my $relationship = $poolcorp->doesproducthaverelationships($product_id);
+  say $relationship->product_id;
+  say $relationship->hassub;
+  say $relationship->hasinfo;
+  say $relationship->hasparts;
+  say $relationship->hasother;
+  say $relationship->hasacces;
 =cut
 
 sub doesproducthaverelationships {
@@ -239,6 +252,17 @@ sub doesproducthaverelationships {
 }
 
 =head2 getmcdepartments
+
+It's like a way to go when you need to get all main categories (of the product).
+
+Will return array reference of L<< Data::OpenStruct::Deep >>'s object otherwise undef
+and C<< error_str >> will be set.
+
+  my $departments = $poolcorp->getmcdepartments or die $poolcorp->error_str;
+
+  for my $d (@$departments) {
+    say join "\t", ($d->name, $d->id, $d->total, $d->r);
+  }
 =cut
 
 sub getmcdepartments {
@@ -255,6 +279,18 @@ sub getmcdepartments {
 }
 
 =head2 getmcproductlines
+
+When C<< getmcdepartments >> is for main categories then getmcproductlines is a way
+to get sub categories. You should pass main categories ID to this method.
+
+Will return array reference of L<< Data::OpenStruct::Deep >>'s object >> otherwise
+undef and C<< error_str >> will be set
+
+  my $sub_departments = $poolcorp->getmcproductlines($main_cat_id);
+  for my $sub_dep (@$sub_departments) {
+    say join "\t", ($sub_dep->name, $sub_dep->r, $sub_dep->total);
+  }
+
 =cut
 
 sub getmcproductlines {
@@ -276,6 +312,28 @@ sub getmcproductlines {
 }
 
 =head2 search
+
+Originally i designed this method to be an interface for searching all products 
+based on sub categories name, for example you can pass 
+C<< %2bTop%2fmcdepartmentname_en-us%2fbilliard+-+all >> as keyword to this method, 
+so its like
+
+  while (my $row = $poolcorp->search('%2bTop%2fmcdepartmentname_en-us%2fbilliard+-+all')){
+    for my $product(@$row) {
+      say $product->sku;
+      say $product->name;
+      say $product->mfg;
+      say $product->listprice;
+      say $product->img;
+      say $product->description;
+      say $product->pid;
+      say $product->mannum;
+    }
+  }
+
+But actually you can pass any string to this method and the method will search 
+for the keyword
+
 =cut
 
 sub search {
@@ -313,10 +371,6 @@ sub search {
 
   [map {Data::OpenStruct::Deep->new($_)} @{$decoded->{responsebody}{items}}];
 }
-
-
-
-
 
 =head1 AUTHOR
 

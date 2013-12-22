@@ -1,9 +1,6 @@
 #!/usr/bin/env perl
-use strict;
-use warnings;
-use lib "../lib";
-use WebService::PoolCorp::API;
 use Modern::Perl;
+use WebService::PoolCorp::API;
 use Data::Dumper;
 
 my $poolcorp = WebService::PoolCorp::API->new(
@@ -13,17 +10,15 @@ my $poolcorp = WebService::PoolCorp::API->new(
 
 $poolcorp->auth or die $poolcorp->error_str;
 
-print $poolcorp->token, "\n";
+say $poolcorp->token;
 
-my @departments = $poolcorp->getmcdepartments or die $poolcorp->error_str;
+my $departments = $poolcorp->getmcdepartments or die $poolcorp->error_str;
 
-for my $d (@departments) {
+for my $d (@$departments) {
   say join "\t", ($d->name, $d->id, $d->total, $d->r);
-  my @sub_departments = $poolcorp->getmcproductlines($d->id);
+  my $sub_departments = $poolcorp->getmcproductlines($d->id);
 
-  my @sub_departments = ('%2bTop%2fmcdepartmentname_en-us%2fbilliard+-+all');
-
-  for my $sub_dep (@sub_departments) {
+  for my $sub_dep (@$sub_departments) {
     say join "\t", ($sub_dep->name, $sub_dep->r, $sub_dep->total);
     
     while (my $row = $poolcorp->search($sub_dep->r)){    
@@ -61,7 +56,7 @@ for my $d (@departments) {
         say $info->productid;
 
 
-        my $relationship = $poolcorp->doesproducthaverealtionships($product->pid);
+        my $relationship = $poolcorp->doesproducthaverelationships($product->pid);
         say $relationship->product_id;
         say $relationship->hassub;
         say $relationship->hasinfo;
@@ -74,7 +69,9 @@ for my $d (@departments) {
           say $avail->number;
           say $avail->name;
           say $avail->available;
-        }        
+        }
+
+        die;        
       }
     }
   }
