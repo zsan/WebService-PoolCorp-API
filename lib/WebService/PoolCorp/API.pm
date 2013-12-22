@@ -36,7 +36,30 @@ Perhaps a little code snippet.
     $poolcorp->auth or die $poolcorp->error_str;
     ...
 
-=head1 SUBROUTINES/METHODS
+=head1 ATTRIBUTES
+
+=head2 username
+
+Poolcorp's username
+
+=head2 password
+
+Poolcorp's password
+
+=head2 auth
+
+Its a lazy builder, you can run this when username and password are set, will return
+C<< undef >>, also C<< error_str >> will be set, otherwise it will return token's string.
+
+=head2 token
+
+You need C<< token >> for every requests and you can call C<< auth >> to get 
+C<< token >> with this library.
+
+=head2 service_path
+
+Poolcorp's URL path
+
 =cut
 
 has username     => (is => 'rw', isa => 'Str', required => 1);
@@ -46,6 +69,7 @@ has token        => (is => 'rw', isa => 'Str');
 has search_page  => (is => 'rw', isa => 'Str', writer =>'set_search_page');
 has end_of_page  => (is => 'rw', isa => 'Str', writer =>'set_end_of_page');
 has error_str    => (is => 'rw', writer => 'set_error');
+
 has service_path => (
   is => 'ro',
   default => 'https://pool360.poolcorp.com/Services/MobileService.svc/Process?'
@@ -71,6 +95,16 @@ around 'get' => sub {
   return $res;
 };
 
+=head1 SUBROUTINES/METHODS
+
+=head2 _build_auth
+
+You do not need to call this method manually, it will be called automatically when
+you call C<< auth >>. When it failed then will return C<< undef >> 
+and C<< error_str >> will be set, otherwise will return token's string.
+
+=cut
+
 
 sub _build_auth {
   my $self = shift;
@@ -95,7 +129,8 @@ sub _build_auth {
 }
 
 
-
+=head2 getproduct
+=cut
 sub getproduct {
   my ($self, $pid) = @_;
   
@@ -114,6 +149,8 @@ sub getproduct {
   Data::OpenStruct::Deep->new($decoded->{responsebody}{product});
 }
 
+=head2 getproductavailability
+=cut
 sub getproductavailability{
   my ($self, $pid) = @_;
   
@@ -132,8 +169,10 @@ sub getproductavailability{
   [map { Data::OpenStruct::Deep->new($_) } @{$decoded->{responsebody}{avail}}];
 }
 
+=head2 doesproducthaverelationships
+=cut
 
-sub doesproducthaverealtionships {
+sub doesproducthaverelationships {
   my ($self, $pid) = @_;
   
   unless ($pid) {
@@ -156,6 +195,8 @@ sub doesproducthaverealtionships {
   Data::OpenStruct::Deep->new($decoded->{responsebody});
 }
 
+=head2 getmcdepartments
+=cut
 
 sub getmcdepartments {
   my $self = shift;
@@ -170,6 +211,8 @@ sub getmcdepartments {
   [map {Data::OpenStruct::Deep->new($_)} @{$decoded->{responsebody}{department}}];
 }
 
+=head2 getmcproductlines
+=cut
 
 sub getmcproductlines {
   my ($self, $did) = @_;
@@ -189,6 +232,8 @@ sub getmcproductlines {
   [map {Data::OpenStruct::Deep->new($_)} @{$decoded->{responsebody}{productline}}];
 }
 
+=head2 search
+=cut
 
 sub search {
   my ($self, $keyword) = @_;
