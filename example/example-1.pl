@@ -70,8 +70,6 @@ for my $d (@$departments) {
           say $avail->name;
           say $avail->available;
         }
-
-        die;        
       }
     }
   }
