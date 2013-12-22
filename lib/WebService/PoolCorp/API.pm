@@ -130,7 +130,36 @@ sub _build_auth {
 
 
 =head2 getproduct
+
+Will get detailed information from the product and you need to pass product ID to
+this method.
+
+Will return L<< Data::OpenStruct::Deep >>'s object
+
+  my $info = $poolcorp->getproduct($pid);
+
+  say $info->upc;
+  say $info->department;
+  say $info->uom;
+  say $info->superceding;
+  say $info->sku;
+  say $info->mfg;
+  say $info->img;
+  say $info->homebranchavailability;
+  say $info->variantid;
+  say $info->retailprice;
+  say $info->supercedes;
+  say $info->listprice;
+  say $info->name;
+  say $info->description;
+  say $info->superceeduredate;
+  say $info->obsolete;
+  say $info->productline;
+  say $info->mannum;
+  say $info->price;
+  say $info->productid;
 =cut
+
 sub getproduct {
   my ($self, $pid) = @_;
   
@@ -150,7 +179,21 @@ sub getproduct {
 }
 
 =head2 getproductavailability
+
+Just like the name, it will check for product availability and you need to pass
+product ID to this method.
+
+Will return array reference of L<< Data::OpenStruct::Deep >>'s object
+
+  my $availability = $poolcorp->getproductavailability($pid);
+  for my $avail (@$availability) {
+    say $avail->number;
+    say $avail->name;
+    say $avail->available;
+  }
+
 =cut
+
 sub getproductavailability{
   my ($self, $pid) = @_;
   
