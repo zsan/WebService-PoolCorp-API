@@ -9,7 +9,7 @@ use Data::OpenStruct::Deep;
 use Data::URIEncode qw/complex_to_query/;
 =head1 NAME
 
-WebService::PoolCorp::API - The great new WebService::PoolCorp::API!
+WebService::PoolCorp::API - Perl !nterface to the poolcorop.com's webservice
 
 =head1 VERSION
 
@@ -28,24 +28,29 @@ Perhaps a little code snippet.
 
     use WebService::PoolCorp::API;
 
-    my $foo = WebService::PoolCorp::API->new();
+    my $poolcorp = WebService::PoolCorp::API->new(
+      username => 'foo',
+      password => 'bar',
+    );
+
+    $poolcorp->auth or die $poolcorp->error_str;
     ...
 
-=head1 EXPORT
-
-A list of functions that can be exported.  You can delete this section
-if you don't export anything, such as for a purely object-oriented module.
-
-
+=head1 SUBROUTINES/METHODS
 =cut
 
-has username    => (is => 'rw', isa => 'Str', required => 1);
-has password    => (is => 'rw', isa => 'Str', required => 1);
-has auth        => (is => 'ro', lazy_build => 1, init_arg => undef);
-has token       => (is => 'rw', isa => 'Str');
-has search_page => (is => 'rw', isa => 'Str', writer =>'set_search_page');
-has end_of_page => (is => 'rw', isa => 'Str', writer =>'set_end_of_page');
-has error_str   => (is => 'rw', writer => 'set_error');
+has username     => (is => 'rw', isa => 'Str', required => 1);
+has password     => (is => 'rw', isa => 'Str', required => 1);
+has auth         => (is => 'ro', lazy_build => 1, init_arg => undef);
+has token        => (is => 'rw', isa => 'Str');
+has search_page  => (is => 'rw', isa => 'Str', writer =>'set_search_page');
+has end_of_page  => (is => 'rw', isa => 'Str', writer =>'set_end_of_page');
+has error_str    => (is => 'rw', writer => 'set_error');
+has service_path => (
+  is => 'ro',
+  default => 'https://pool360.poolcorp.com/Services/MobileService.svc/Process?'
+);
+
 has ua          => (
   isa => 'Object',
   is => 'rw',
@@ -54,8 +59,7 @@ has ua          => (
 );
 
 around 'get' => sub {
-  my $original_method = shift;
-  my $self = shift;
+  my ($original_method, $self) = @_;
 
   my $res = $self->$original_method(@_);
   
@@ -118,13 +122,8 @@ sub getproductavailability{
     return undef;
   }
 
-  my $query = { 
-    pid     => $pid, 
-    process => 'getproductavailability', 
-    tk      => $self->token 
-  };
-
-  my $res = $self->get($self->service_path . complex_to_query($query));
+  my $query = { pid => $pid, process => 'getproductavailability', tk => $self->token };
+  my $res   = $self->get($self->service_path . complex_to_query($query));
 
   return undef if $self->error_str;
 
@@ -168,11 +167,7 @@ sub getmcdepartments {
 
   my $decoded = decode_json $res->content;
   
-  my @departments = map { 
-    Data::OpenStruct::Deep->new($_) 
-  } @{$decoded->{responsebody}{department}};
-
-  return @departments if @departments;
+  [map {Data::OpenStruct::Deep->new($_)} @{$decoded->{responsebody}{department}}];
 }
 
 
@@ -184,22 +179,14 @@ sub getmcproductlines {
     return undef;
   }
 
-  my $query = {
-    did     => $did,
-    process => 'getmcproductlines',
-    tk      => $self->token,
-  };
+  my $query = {did => $did, process => 'getmcproductlines', tk => $self->token};
+  my $res   = $self->get($self->service_path . complex_to_query($query));
   
-  my $res = $self->get($self->service_path . complex_to_query($query));
   return undef if $self->error_str;
 
   my $decoded = decode_json $res->content;
 
-  my @sub_departments = map {
-    Data::OpenStruct::Deep->new($_) 
-  } @{$decoded->{responsebody}{productline}};
-
-  return @sub_departments if @sub_departments;
+  [map {Data::OpenStruct::Deep->new($_)} @{$decoded->{responsebody}{productline}}];
 }
 
 
@@ -240,25 +227,8 @@ sub search {
 }
 
 
-sub service_path {
-  'https://pool360.poolcorp.com/Services/MobileService.svc/Process?';
-}
 
-=head1 SUBROUTINES/METHODS
 
-=head2 function1
-
-=cut
-
-sub function1 {
-}
-
-=head2 function2
-
-=cut
-
-sub function2 {
-}
 
 =head1 AUTHOR
 
