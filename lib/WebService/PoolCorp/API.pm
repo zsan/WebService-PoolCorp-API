@@ -340,7 +340,8 @@ sub search {
   my ($self, $keyword) = @_;
 
   if ($self->end_of_page) {
-    $self->set_end_of_page(1);
+    $self->set_end_of_page(0);
+    $self->set_search_page(0);
     return undef;
   }
 
